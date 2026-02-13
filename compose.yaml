@@ -1,0 +1,88 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_USER: loja
+      POSTGRES_PASSWORD: loja_pass
+      POSTGRES_DB: loja_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U loja"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  gateway:
+    build: ./src/gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - DB_HOST=db
+      - DB_USER=loja
+      - DB_PASS=loja_pass
+      - DB_NAME=loja_db
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - loja-veloz-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pedidos:
+    build: ./src/pedidos
+    environment:
+      - DB_HOST=db
+      - DB_USER=loja
+      - DB_PASS=loja_pass
+      - DB_NAME=loja_db
+    networks:
+      - loja-veloz-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pagamentos:
+    build: ./src/pagamentos
+    environment:
+      - DB_HOST=db
+      - DB_USER=loja
+      - DB_PASS=loja_pass
+      - DB_NAME=loja_db
+    networks:
+      - loja-veloz-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  estoque:
+    build: ./src/estoque
+    environment:
+      - DB_HOST=db
+      - DB_USER=loja
+      - DB_PASS=loja_pass
+      - DB_NAME=loja_db
+    networks:
+      - loja-veloz-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+
+networks:
+  loja-veloz-net:
+    driver: bridge
