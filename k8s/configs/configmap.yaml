@@ -1,7 +1,11 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: loja-config
+  name: loja-veloz-config
+  labels:
+    app: loja-veloz
 data:
-  APP_ENV: production
-  LOG_LEVEL: info
+  PEDIDOS_URL: "http://loja-veloz-pedidos:3000"
+  ESTOQUE_URL: "http://loja-veloz-estoque:3000"
+  PAGAMENTOS_URL: "http://loja-veloz-pagamentos:3000"
+  DB_NAME: "loja_db"

@@ -1,21 +1,26 @@
 version: '3.8'
+
 services:
   db:
     image: postgres:14-alpine
+    container_name: loja_db_server
     environment:
-      POSTGRES_USER: loja
-      POSTGRES_PASSWORD: loja_pass
-      POSTGRES_DB: loja_db
+      - POSTGRES_USER=loja
+      - POSTGRES_PASSWORD=loja_pass
+      - POSTGRES_DB=loja_db  # Mantenha este nome, mas garanta que a APP use o mesmo
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - loja-veloz-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U loja"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U loja -d loja_db"]
+      interval: 5s
       timeout: 5s
       retries: 5
 
   gateway:
     build: ./src/gateway
+    image: john/loja-veloz-gateway:latest
     ports:
       - "3000:3000"
     environment:
@@ -29,56 +34,48 @@ services:
         condition: service_healthy
     networks:
       - loja-veloz-net
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   pedidos:
     build: ./src/pedidos
+    image: john/loja-veloz-pedidos:latest
     environment:
       - DB_HOST=db
       - DB_USER=loja
       - DB_PASS=loja_pass
       - DB_NAME=loja_db
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - loja-veloz-net
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   pagamentos:
     build: ./src/pagamentos
+    image: john/loja-veloz-pagamentos:latest
     environment:
       - DB_HOST=db
       - DB_USER=loja
       - DB_PASS=loja_pass
       - DB_NAME=loja_db
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - loja-veloz-net
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   estoque:
     build: ./src/estoque
+    image: john/loja-veloz-estoque:latest
     environment:
       - DB_HOST=db
       - DB_USER=loja
       - DB_PASS=loja_pass
       - DB_NAME=loja_db
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - loja-veloz-net
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
 volumes:
   postgres_data:

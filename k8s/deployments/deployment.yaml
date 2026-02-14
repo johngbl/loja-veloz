@@ -1,11 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: gateway-deployment
+  name: loja-veloz-gateway-deployment
   labels:
-    app: gateway
+    app: loja-veloz-gateway
 spec:
   replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: gateway
@@ -14,11 +19,39 @@ spec:
       labels:
         app: gateway
     spec:
+      securityContext:
+        runAsNonRoot: true
       containers:
         - name: gateway
-          image: REPLACE_WITH_YOUR_REGISTRY/gateway:latest
+          image: REPLACE_WITH_REGISTRY/loja-veloz-gateway:latest
           ports:
             - containerPort: 3000
+          env:
+            - name: PEDIDOS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: loja-veloz-config
+                  key: PEDIDOS_URL
+            - name: ESTOQUE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: loja-veloz-config
+                  key: ESTOQUE_URL
+            - name: PAGAMENTOS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: loja-veloz-config
+                  key: PAGAMENTOS_URL
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: loja-veloz-config
+                  key: DB_NAME
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: loja-veloz-secrets
+                  key: DB_PASS
           resources:
             requests:
               cpu: "100m"
@@ -31,25 +64,22 @@ spec:
               path: /health
               port: 3000
             initialDelaySeconds: 5
-            periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /health
               port: 3000
             initialDelaySeconds: 15
-            periodSeconds: 20
-
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: gateway-hpa
+  name: loja-veloz-gateway-hpa
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: gateway-deployment
-  minReplicas: 1
+    name: loja-veloz-gateway-deployment
+  minReplicas: 2
   maxReplicas: 5
   metrics:
     - type: Resource
@@ -57,4 +87,115 @@ spec:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: 50
+          averageUtilization: 60
+
+---
+# Base Deployment: pedidos
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loja-veloz-pedidos-deployment
+  labels:
+    app: loja-veloz-pedidos
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pedidos
+  template:
+    metadata:
+      labels:
+        app: pedidos
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: pedidos
+          image: REPLACE_WITH_REGISTRY/loja-veloz-pedidos:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: loja-veloz-config
+                  key: DB_NAME
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: loja-veloz-secrets
+                  key: DB_PASS
+
+---
+# Base Deployment: pagamentos
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loja-veloz-pagamentos-deployment
+  labels:
+    app: loja-veloz-pagamentos
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pagamentos
+  template:
+    metadata:
+      labels:
+        app: pagamentos
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: pagamentos
+          image: REPLACE_WITH_REGISTRY/loja-veloz-pagamentos:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: loja-veloz-config
+                  key: DB_NAME
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: loja-veloz-secrets
+                  key: DB_PASS
+
+---
+# Base Deployment: estoque
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loja-veloz-estoque-deployment
+  labels:
+    app: loja-veloz-estoque
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: estoque
+  template:
+    metadata:
+      labels:
+        app: estoque
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: estoque
+          image: REPLACE_WITH_REGISTRY/loja-veloz-estoque:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: loja-veloz-config
+                  key: DB_NAME
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: loja-veloz-secrets
+                  key: DB_PASS

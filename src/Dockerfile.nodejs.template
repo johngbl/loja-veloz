@@ -1,17 +1,26 @@
+### Multi-stage Node.js Dockerfile template (alpine, non-root user)
+### Usage: copy to each service folder and adapt `COPY`/`WORKDIR` as needed
+
 FROM node:18-alpine AS deps
 WORKDIR /usr/src/app
+# install dependencies based on the lockfile
 COPY package*.json ./
 RUN npm ci --production
 
 FROM node:18-alpine AS builder
 WORKDIR /usr/src/app
+# copy source code
 COPY . .
+# If you have a build step, run it here (e.g., transpile, bundle)
+# RUN npm run build
 
 FROM node:18-alpine AS runner
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
+# create non-root user
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 WORKDIR /home/appuser/app
+# copy production node_modules and app source from previous stages
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=builder /usr/src/app .
 RUN chown -R appuser:appgroup /home/appuser
