@@ -20,7 +20,7 @@ services:
 
   gateway:
     build: ./src/gateway
-    image: john/loja-veloz-gateway:latest
+    image: johngbl/loja-veloz-gateway:latest
     ports:
       - "3000:3000"
     environment:
@@ -37,7 +37,7 @@ services:
 
   pedidos:
     build: ./src/pedidos
-    image: john/loja-veloz-pedidos:latest
+    image: johngbl/loja-veloz-pedidos:latest
     environment:
       - DB_HOST=db
       - DB_USER=loja
@@ -51,7 +51,7 @@ services:
 
   pagamentos:
     build: ./src/pagamentos
-    image: john/loja-veloz-pagamentos:latest
+    image: johngbl/loja-veloz-pagamentos:latest
     environment:
       - DB_HOST=db
       - DB_USER=loja
@@ -65,7 +65,7 @@ services:
 
   estoque:
     build: ./src/estoque
-    image: john/loja-veloz-estoque:latest
+    image: johngbl/loja-veloz-estoque:latest
     environment:
       - DB_HOST=db
       - DB_USER=loja
